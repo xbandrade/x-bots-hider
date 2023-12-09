@@ -2,14 +2,11 @@ let currentAuthor = null;
 const baseXPath = './/article//div[2]/div/div/div[1]/div';
 const spanXPath = baseXPath + '/span/span/span';
 const textXPath = baseXPath + '/span/text()';
+const postPattern = /https:\/\/(twitter\.com|x\.com)\/.+\/status\/.*$/;
 
 function removeElementByXPath(xpath) {
     const element = document.evaluate(
-        xpath,
-        document,
-        null,
-        XPathResult.FIRST_ORDERED_NODE_TYPE,
-        null
+        xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null
     ).singleNodeValue;
     return element && removeParent(element, 12);
 }
@@ -30,23 +27,23 @@ function removeParent(element, levels) {
 
 function waitUntilDocumentIsReady(callback) {
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', callback);
+      document.addEventListener('DOMContentLoaded', callback);
     } else {
-        callback();
+      callback();
     }
-}
+  }
 
 function findCommentAuthor(element) {
-    const xpath = './/article//div[2]/div[2]/div[1]/div/div[1]/div/div/div[1]/div/a'
-    const anchorElement = document.evaluate(
-        xpath, element, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null
-    ).singleNodeValue;
-    if (anchorElement) {
-        const hrefValue = anchorElement.getAttribute('href');
-        return hrefValue;
-    } else {
-        return null;
+    if (element) {
+        const xpath = './/article//div[2]/div[2]/div[1]//div[1]//div[1]//a'
+        const anchorElement = document.evaluate(
+            xpath, element, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null
+        ).singleNodeValue;
+        if (anchorElement) {
+            return anchorElement.getAttribute('href');
+        }
     }
+    return null;
 }
 
 
@@ -69,29 +66,30 @@ function isCommentRelevant(element, likes = 50, retweets = 50, comments = 50) {
 
 waitUntilDocumentIsReady(() => {
     try {
-        const observer = new MutationObserver((mutations) => {
-            for (const mutation of mutations) {
-                if (mutation.type === 'childList') {
-                    const ancestors = document.querySelectorAll('div[data-testid="cellInnerDiv"]');
-                    if (ancestors.length > 0 && !currentAuthor) {
+        observer = new MutationObserver((mutations) => {
+            if (postPattern.test(window.location.href)) {
+                for (const mutation of mutations) {
+                    if (mutation.type === 'childList') {
+                        mutationsOccurred = true;
+                        const ancestors = document.querySelectorAll('div[data-testid="cellInnerDiv"]');
                         setCurrentPostAuthor(ancestors[0]);
-                    }
-                    ancestors.forEach((ancestor) => {
-                        if (findCommentAuthor(ancestor) != currentAuthor && !isCommentRelevant(ancestor)) {
-                            const child = ancestor.querySelector(':scope > div');
-                            if (child) {
-                                console.log('Hiding comment');
-                                child.remove();
+                        ancestors.forEach((ancestor) => {
+                            if (findCommentAuthor(ancestor) != currentAuthor && !isCommentRelevant(ancestor)) {
+                                const child = ancestor.querySelector(':scope > div');
+                                if (child) {
+                                    child.remove();
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             }
         });
         observer.observe(document.body, {
             childList: true,
             subtree: true
-        });
+        });        
+
     } catch (error) {
         console.error('Error: ', error);
     }

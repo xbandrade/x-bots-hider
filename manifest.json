@@ -8,17 +8,19 @@
     },
     "permissions": [
         "activeTab",
-        "storage"
+        "storage",
+        "webNavigation"
     ],
     "icons": {
-      "48": "icon.png"
-    },
-    "content_scripts": [{
-        "matches": [
-            "https://twitter.com/*/status/*",
-            "https://x.com/*/status/*"
-        ],
-        "js": ["content.js"]
-    }]
-  }
-  
+        "48": "icon.png"
+    },  
+    "content_scripts": [
+        {
+            "matches": [
+            "https://twitter.com/*",
+            "https://x.com/*"
+            ],
+            "js": ["content.js"]
+        }
+    ]
+}
