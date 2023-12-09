@@ -2,6 +2,11 @@ let currentAuthor = null;
 const baseXPath = './/article//div[2]/div/div/div[1]/div';
 const spanXPath = baseXPath + '/span/span/span';
 const textXPath = baseXPath + '/span/text()';
+const interactionXPath = './/article/div/div/div[2]/div[2]/div[3]/div/div/div';
+const commentXPath = `${interactionXPath}[1]/div/div/div[2]/span/span/span`;
+const retweetXPath = `${interactionXPath}[2]/div/div/div[2]/span/span/span`;
+const likeXPath = `${interactionXPath}[3]/div/div/div[2]/span/span/span`;
+
 const postPattern = /https:\/\/(twitter\.com|x\.com)\/.+\/status\/.*$/;
 
 function removeElementByXPath(xpath) {
@@ -51,15 +56,35 @@ function setCurrentPostAuthor(element) {
     currentAuthor = findCommentAuthor(element);
 }
 
-function isCommentRelevant(element, likes = 50, retweets = 50, comments = 50) {
-    if (document.evaluate(spanXPath, element, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue) {
-        return false;
+function getTextByXPath(xpath, node) {
+    const result = document.evaluate(xpath, node, null, XPathResult.STRING_TYPE, null);
+    const textContent = result.stringValue.trim();
+    return textContent;
+}
+
+function findNodeByXPath(xpath, element) {
+    return document.evaluate(xpath, element, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+}
+
+function isInteractionRelevant(node, value) {
+    const text = node.textContent.trim();
+    if (/[a-zA-Z]/.test(text)) {
+        return true;
     }
-    if (document.evaluate(textXPath, element, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue) {
+    return Number.isInteger(Number(text)) && Number(text) >= value;
+}
+
+function isCommentRelevant(element, likes = 50, retweets = 50, comments = 30) {
+    if (findNodeByXPath(spanXPath, element) || findNodeByXPath(textXPath, element)){
         return false;
     }
     if (element.querySelector('svg[data-testid="icon-verified"]')) {
-        return false;
+        const commentText = findNodeByXPath(commentXPath, element);
+        const retweetText = findNodeByXPath(retweetXPath, element);
+        const likeText = findNodeByXPath(likeXPath, element);
+        return ((commentText && isInteractionRelevant(commentText, comments)) ||
+                (retweetText && isInteractionRelevant(retweetText, retweets)) ||
+                (likeText && isInteractionRelevant(likeText, likes)));
     }
     return true;
 }
