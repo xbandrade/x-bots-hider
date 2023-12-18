@@ -1,4 +1,5 @@
 let currentAuthor = null;
+let minLikes = minComments = minRetweets = 0;
 const baseXPath = './/article//div[2]/div/div/div[1]/div';
 const spanXPath = baseXPath + '/span/span/span';
 const textXPath = baseXPath + '/span/text()';
@@ -6,9 +7,7 @@ const interactionXPath = './/article/div/div/div[2]/div[2]/div[3]/div/div/div';
 const replyInteractionXPath = './/article/div/div/div[2]/div[2]/div[4]/div/div/div';
 const replyFocusXPath = './/article/div/div/div[3]/div[5]/div/div/div';
 const interactionSpanXPath = '/div/div/div[2]/span/span/span'
-
 const postPattern = /https:\/\/(twitter\.com|x\.com)\/.+\/status\/.*$/;
-
 
 function removeElementByXPath(xpath) {
     const element = document.evaluate(
@@ -52,7 +51,6 @@ function findCommentAuthor(element) {
     return null;
 }
 
-
 function setCurrentPostAuthor(element) {
     currentAuthor = findCommentAuthor(element);
 }
@@ -87,11 +85,16 @@ function getInteractionXPaths(index) {
             `${replyFocusXPath}[${index}]${interactionSpanXPath}`]
 }
 
-function isCommentRelevant(element, likes = 50, retweets = 50, comments = 30) {
-    if (findNodeByXPath(spanXPath, element) || findNodeByXPath(textXPath, element)) {
-        return false;
-    }
+function getUserPreferences(callback) {
+    chrome.storage.sync.get(
+        { likes: 30, retweets: 15, comments: 10 },
+        (preferences) => {
+            callback(preferences);
+        }
+    );
+}
 
+function isCommentRelevant(element) {
     if (element.querySelector('svg[data-testid="icon-verified"]')) {
         const commentXpaths = getInteractionXPaths(1);
         const retweetXpaths = getInteractionXPaths(2);
@@ -100,9 +103,9 @@ function isCommentRelevant(element, likes = 50, retweets = 50, comments = 30) {
         const retweetText = findNodeByXPath(retweetXpaths, element);
         const likeText = findNodeByXPath(likeXpaths, element);
         return (
-            (commentText && isInteractionRelevant(commentText, comments)) ||
-            (retweetText && isInteractionRelevant(retweetText, retweets)) ||
-            (likeText && isInteractionRelevant(likeText, likes))
+            (commentText && isInteractionRelevant(commentText, minComments)) ||
+            (retweetText && isInteractionRelevant(retweetText, minRetweets)) ||
+            (likeText && isInteractionRelevant(likeText, minLikes))
         );
     }
     return true;
@@ -110,6 +113,12 @@ function isCommentRelevant(element, likes = 50, retweets = 50, comments = 30) {
 
 waitUntilDocumentIsReady(() => {
     try {
+        getUserPreferences((preferences) => {
+            minLikes = preferences.likes;
+            minRetweets = preferences.retweets;
+            minComments = preferences.comments;
+            console.log(`User Preferences\nMinimum Likes: ${minLikes}\nMinimum Retweets: ${minRetweets}\nMinimum Comments: ${minComments}`);
+        });
         observer = new MutationObserver((mutations) => {
             if (postPattern.test(window.location.href)) {
                 for (const mutation of mutations) {
