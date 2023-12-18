@@ -3,11 +3,12 @@ const baseXPath = './/article//div[2]/div/div/div[1]/div';
 const spanXPath = baseXPath + '/span/span/span';
 const textXPath = baseXPath + '/span/text()';
 const interactionXPath = './/article/div/div/div[2]/div[2]/div[3]/div/div/div';
-const commentXPath = `${interactionXPath}[1]/div/div/div[2]/span/span/span`;
-const retweetXPath = `${interactionXPath}[2]/div/div/div[2]/span/span/span`;
-const likeXPath = `${interactionXPath}[3]/div/div/div[2]/span/span/span`;
+const replyInteractionXPath = './/article/div/div/div[2]/div[2]/div[4]/div/div/div';
+const replyFocusXPath = './/article/div/div/div[3]/div[5]/div/div/div';
+const interactionSpanXPath = '/div/div/div[2]/span/span/span'
 
 const postPattern = /https:\/\/(twitter\.com|x\.com)\/.+\/status\/.*$/;
+
 
 function removeElementByXPath(xpath) {
     const element = document.evaluate(
@@ -62,8 +63,14 @@ function getTextByXPath(xpath, node) {
     return textContent;
 }
 
-function findNodeByXPath(xpath, element) {
-    return document.evaluate(xpath, element, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+function findNodeByXPath(xpaths, element) {
+    for (var xpath of xpaths) {
+        const node = document.evaluate(xpath, element, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+        if (node) {
+            return node;
+        }
+    }
+    return null;
 }
 
 function isInteractionRelevant(node, value) {
@@ -74,17 +81,29 @@ function isInteractionRelevant(node, value) {
     return Number.isInteger(Number(text)) && Number(text) >= value;
 }
 
+function getInteractionXPaths(index) {
+    return [`${interactionXPath}[${index}]${interactionSpanXPath}`,
+            `${replyInteractionXPath}[${index}]${interactionSpanXPath}`,
+            `${replyFocusXPath}[${index}]${interactionSpanXPath}`]
+}
+
 function isCommentRelevant(element, likes = 50, retweets = 50, comments = 30) {
-    if (findNodeByXPath(spanXPath, element) || findNodeByXPath(textXPath, element)){
+    if (findNodeByXPath(spanXPath, element) || findNodeByXPath(textXPath, element)) {
         return false;
     }
+
     if (element.querySelector('svg[data-testid="icon-verified"]')) {
-        const commentText = findNodeByXPath(commentXPath, element);
-        const retweetText = findNodeByXPath(retweetXPath, element);
-        const likeText = findNodeByXPath(likeXPath, element);
-        return ((commentText && isInteractionRelevant(commentText, comments)) ||
-                (retweetText && isInteractionRelevant(retweetText, retweets)) ||
-                (likeText && isInteractionRelevant(likeText, likes)));
+        const commentXpaths = getInteractionXPaths(1);
+        const retweetXpaths = getInteractionXPaths(2);
+        const likeXpaths = getInteractionXPaths(3);
+        const commentText = findNodeByXPath(commentXpaths, element);
+        const retweetText = findNodeByXPath(retweetXpaths, element);
+        const likeText = findNodeByXPath(likeXpaths, element);
+        return (
+            (commentText && isInteractionRelevant(commentText, comments)) ||
+            (retweetText && isInteractionRelevant(retweetText, retweets)) ||
+            (likeText && isInteractionRelevant(likeText, likes))
+        );
     }
     return true;
 }
