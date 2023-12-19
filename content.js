@@ -2,6 +2,8 @@ let currentAuthor = null;
 let minLikes = minComments = minRetweets = 0;
 let likesCheckOn = commentsCheckOn = retweetsCheckOn = true;
 let nonVerifiedCheckOn = false;
+const mutePortuguese = 'este post pertence a uma conta que você silenciou';
+const muteEnglish = 'this post is from an account you muted';
 const baseXPath = './/article//div[2]/div/div/div[1]/div';
 const spanXPath = baseXPath + '/span/span/span';
 const textXPath = baseXPath + '/span/text()';
@@ -103,6 +105,11 @@ function getUserPreferences(callback) {
 }
 
 function isCommentRelevant(element) {
+    const containsPtMuted = element.innerText.toLowerCase().includes(mutePortuguese);
+    const containsEnMuted = element.innerText.toLowerCase().includes(muteEnglish);
+    if (containsPtMuted || containsEnMuted) {
+        return false;
+    }
     if (nonVerifiedCheckOn || element.querySelector('svg[data-testid="icon-verified"]')) {
         const commentXpaths = getInteractionXPaths(1);
         const retweetXpaths = getInteractionXPaths(2);
