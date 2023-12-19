@@ -1,5 +1,6 @@
 let currentAuthor = null;
 let minLikes = minComments = minRetweets = 0;
+let likesCheckOn = commentsCheckOn = retweetsCheckOn = true;
 const baseXPath = './/article//div[2]/div/div/div[1]/div';
 const spanXPath = baseXPath + '/span/span/span';
 const textXPath = baseXPath + '/span/text()';
@@ -32,11 +33,11 @@ function removeParent(element, levels) {
 
 function waitUntilDocumentIsReady(callback) {
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', callback);
+        document.addEventListener('DOMContentLoaded', callback);
     } else {
-      callback();
+        callback();
     }
-  }
+}
 
 function findCommentAuthor(element) {
     if (element) {
@@ -87,7 +88,7 @@ function getInteractionXPaths(index) {
 
 function getUserPreferences(callback) {
     chrome.storage.sync.get(
-        { likes: 30, retweets: 15, comments: 10 },
+        { likes: 30, retweets: 15, comments: 10, likesCheckbox: true, retweetsCheckbox: true, commentsCheckbox: true },
         (preferences) => {
             callback(preferences);
         }
@@ -103,9 +104,10 @@ function isCommentRelevant(element) {
         const retweetText = findNodeByXPath(retweetXpaths, element);
         const likeText = findNodeByXPath(likeXpaths, element);
         return (
-            (commentText && isInteractionRelevant(commentText, minComments)) ||
-            (retweetText && isInteractionRelevant(retweetText, minRetweets)) ||
-            (likeText && isInteractionRelevant(likeText, minLikes))
+            (!commentsCheckOn && !retweetsCheckOn && !likesCheckOn) ||
+            (commentsCheckOn && commentText && isInteractionRelevant(commentText, minComments)) ||
+            (retweetsCheckOn && retweetText && isInteractionRelevant(retweetText, minRetweets)) ||
+            (likesCheckOn && likeText && isInteractionRelevant(likeText, minLikes))
         );
     }
     return true;
@@ -117,7 +119,15 @@ waitUntilDocumentIsReady(() => {
             minLikes = preferences.likes;
             minRetweets = preferences.retweets;
             minComments = preferences.comments;
-            console.log(`User Preferences\nMinimum Likes: ${minLikes}\nMinimum Retweets: ${minRetweets}\nMinimum Comments: ${minComments}`);
+            likesCheckOn = preferences.likesCheckbox;
+            retweetsCheckOn = preferences.retweetsCheckbox;
+            commentsCheckOn = preferences.commentsCheckbox;
+            console.log(
+                'User Preferences\n' +
+                `Min Likes: ${likesCheckOn ? minLikes : 'off'}\n` +
+                `Min Retweets: ${retweetsCheckOn ? minRetweets : 'off'}\n` +
+                `Min Comments: ${commentsCheckOn ? minComments : 'off'}`
+            );
         });
         observer = new MutationObserver((mutations) => {
             if (postPattern.test(window.location.href)) {
