@@ -1,6 +1,7 @@
 let currentAuthor = null;
 let minLikes = minComments = minRetweets = 0;
 let likesCheckOn = commentsCheckOn = retweetsCheckOn = true;
+let nonVerifiedCheckOn = false;
 const baseXPath = './/article//div[2]/div/div/div[1]/div';
 const spanXPath = baseXPath + '/span/span/span';
 const textXPath = baseXPath + '/span/text()';
@@ -88,7 +89,13 @@ function getInteractionXPaths(index) {
 
 function getUserPreferences(callback) {
     chrome.storage.sync.get(
-        { likes: 30, retweets: 15, comments: 10, likesCheckbox: true, retweetsCheckbox: true, commentsCheckbox: true },
+        { likes: 30,
+          retweets: 15,
+          comments: 10,
+          likesCheckbox: true,
+          retweetsCheckbox: true,
+          commentsCheckbox: true,
+          nonVerifiedCheckbox: false },
         (preferences) => {
             callback(preferences);
         }
@@ -96,7 +103,7 @@ function getUserPreferences(callback) {
 }
 
 function isCommentRelevant(element) {
-    if (element.querySelector('svg[data-testid="icon-verified"]')) {
+    if (nonVerifiedCheckOn || element.querySelector('svg[data-testid="icon-verified"]')) {
         const commentXpaths = getInteractionXPaths(1);
         const retweetXpaths = getInteractionXPaths(2);
         const likeXpaths = getInteractionXPaths(3);
@@ -122,11 +129,13 @@ waitUntilDocumentIsReady(() => {
             likesCheckOn = preferences.likesCheckbox;
             retweetsCheckOn = preferences.retweetsCheckbox;
             commentsCheckOn = preferences.commentsCheckbox;
+            nonVerifiedCheckOn = preferences.nonVerifiedCheckbox;
             console.log(
                 'User Preferences\n' +
                 `Min Likes: ${likesCheckOn ? minLikes : 'off'}\n` +
                 `Min Retweets: ${retweetsCheckOn ? minRetweets : 'off'}\n` +
-                `Min Comments: ${commentsCheckOn ? minComments : 'off'}`
+                `Min Comments: ${commentsCheckOn ? minComments : 'off'}\n` +
+                `Include non-verified users: ${nonVerifiedCheckOn ? 'on' : 'off'}`
             );
         });
         observer = new MutationObserver((mutations) => {

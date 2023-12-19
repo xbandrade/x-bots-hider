@@ -5,15 +5,6 @@ body {
     padding: 10px;
 }
 
-label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-input {
-    margin-bottom: 10px;
-}
-
 button {
     background-color: #808080;
     color: #fff;
@@ -24,4 +15,17 @@ button {
 
 button:hover {
     background-color: #555;
+}
+
+input[type=checkbox] { 
+    vertical-align: middle; 
+    position: relative; 
+}
+
+input[type=number] {
+    margin-bottom: 10px;
+}
+  
+label { 
+    display: block;
 }

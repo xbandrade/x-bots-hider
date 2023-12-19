@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const likesCheckbox = document.getElementById('likesCheckbox');
     const retweetsCheckbox = document.getElementById('retweetsCheckbox');
     const commentsCheckbox = document.getElementById('commentsCheckbox');
+    const nonVerifiedCheckbox = document.getElementById('nonVerifiedCheckbox');
     const saveButton = document.getElementById('saveButton');
     function saveOptionsAndRefresh() {
         const likes = likesCheckbox.checked ? parseInput(likesInput.value) : null;
@@ -21,7 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
             comments: comments !== null ? comments : 10,
             likesCheckbox: likesCheckbox.checked,
             retweetsCheckbox: retweetsCheckbox.checked,
-            commentsCheckbox: commentsCheckbox.checked
+            commentsCheckbox: commentsCheckbox.checked,
+            nonVerifiedCheckbox: nonVerifiedCheckbox.checked
         }, () => {
             chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
                 chrome.tabs.reload(tabs[0].id);
@@ -34,7 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     chrome.storage.sync.get(
-        { likes: 30, retweets: 15, comments: 10, likesCheckbox: true, retweetsCheckbox: true, commentsCheckbox: true },
+        { likes: 30,
+          retweets: 15,
+          comments: 10,
+          likesCheckbox: true,
+          retweetsCheckbox: true,
+          commentsCheckbox: true,
+          nonVerifiedCheckbox: false },
         function (preferences) {
             likesInput.value = preferences.likes;
             retweetsInput.value = preferences.retweets;
@@ -42,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
             likesCheckbox.checked = preferences.likesCheckbox;
             retweetsCheckbox.checked = preferences.retweetsCheckbox;
             commentsCheckbox.checked = preferences.commentsCheckbox;
+            nonVerifiedCheckbox.checked = preferences.nonVerifiedCheckbox;
             likesInput.disabled = !likesCheckbox.checked;
             retweetsInput.disabled = !retweetsCheckbox.checked;
             commentsInput.disabled = !commentsCheckbox.checked;

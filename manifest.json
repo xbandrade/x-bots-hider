@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "X Bots Hider",
+    "name": "X Posts Hider",
     "version": "0.1",
     "description": "Hide bots and irrelevant comments from Twitter/X posts",
     "action": {
